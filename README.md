@@ -1,96 +1,82 @@
-📘 Database Scaling Lab — 500K Rows + Index + Redis
-🚀 Goal
-
-Simulate real-world backend scaling from:
-
-❌ Full table scan (4s per request)
-
-✅ Indexed lookup (~300ms)
-
-🚀 Redis cached lookup (~50ms)
-
-📈 500+ requests/sec under load
-
-This project demonstrates how backend performance evolves through layered optimizations.
-
-🏗 Tech Stack
-
-Node.js (compiled TypeScript)
-
-Express
-
-PostgreSQL (Neon Cloud)
-
-Prisma (with pg adapter)
-
-Redis (Upstash)
-
-Autocannon (load testing)
-
-📊 What We Built
-1️⃣ Seeded 500,000 Users
-
-Inserted in 5k batch chunks
-
-Simulated realistic production dataset
-
-2️⃣ Baseline (No Index)
-
-Query:
-
-GET /users/:email
-
-
-Result:
-
-~4000ms response time
-
-Full table scan
-
-System collapses under 50 concurrent users
-
-3️⃣ Added Index on email
-email String @unique
-
-
-Result:
-
-~300ms response time
-
-O(log n) B-Tree lookup
-
-Massive improvement
-
-Still DB-bound under concurrency
-
-4️⃣ Added Redis Caching
-
-Flow:
-
-Request → Redis → (if miss) DB → Store in Redis → Return
-
-
-TTL: 60 seconds
-
-Results:
-
-Stage	Throughput	Avg Latency
-No index	❌ crash	~4s
-With index	~20 req/sec	~1.3s under load
-With Redis	~500 req/sec	~98ms
-
-Autocannon test:
-
-npx autocannon -c 50 -d 20 http://localhost:4000/users/user499999@example.com
-
-
-Result:
-
-10,000 requests in 20 seconds
-
-~500 req/sec
-
-~98ms avg latency
 
 
 <img width="750" height="573" alt="image" src="https://github.com/user-attachments/assets/c8340399-eea8-4c45-a364-85f6a2c8dc74" />
+
+ System Performance Benchmark (Scaling Lab)
+ Phase 1 — No Index, No Cache
+
+500,000 rows
+
+Single request latency: ~4000ms
+
+50 concurrent users: ❌ system collapse
+
+Throughput: ~0 req/sec (all errors)
+
+Conclusion:
+Full table scan → system unusable under concurrency.
+
+🟡 Phase 2 — With Index (No Cache)
+
+500,000 rows
+
+Single request latency: ~328ms
+
+30 concurrent users:
+
+Avg latency: ~1384ms
+
+Throughput: ~20 req/sec
+
+Errors present
+
+Conclusion:
+Index improved query 12x,
+but DB still bottleneck under load.
+
+🟢 Phase 3 — With Redis Cache
+
+500,000 rows
+
+First request: ~3721ms (DB)
+
+Cached request: ~46ms
+
+Load Test (50 concurrent users, 20s)
+
+Avg latency: 98ms
+
+P50 latency: 79ms
+
+P99 latency: 839ms
+
+Throughput: ~500 req/sec
+
+10,000 requests served in 20s
+
+No collapse
+
+🚀 Capability Comparison
+Stage	Avg Latency	Req/Sec	Stability
+No Index	~4000ms	0	❌ Collapse
+With Index	~1384ms	~20	⚠ Limited
+With Redis	~98ms	~500	✅ Stable
+📈 Improvement Summary
+
+From baseline → Redis:
+
+⚡ Latency improved ~40x
+
+🚀 Throughput improved ~25x
+
+🧠 DB load reduced massively
+
+🔥 System became horizontally scalable
+
+📌 Current Capability
+
+On your current machine + Neon + Upstash:
+
+System can handle ~500 requests/sec
+at 50 concurrent users
+with ~100ms average latency.
