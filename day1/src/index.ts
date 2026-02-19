@@ -1,4 +1,71 @@
-console.log('hello')
+import type { Request, Response } from "express";
+import dotenv from "dotenv";
+import express from "express";
+import { PrismaClient } from "@prisma/client";
+import pg from "pg";
+import { PrismaPg } from "@prisma/adapter-pg";
+
+dotenv.config();
+
+const app = express();
+
+const PORT: number = Number(process.env.PORT) || 4000;
+
+app.use(express.json());
+
+const { Pool } = pg;
+
+const DATABASE_URL: string | undefined = process.env.DATABASE_URL;
+console.log(DATABASE_URL)
+
+if (!DATABASE_URL) {
+  throw new Error("DATABASE_URL is not defined in environment variables");
+}
+
+const pool = new Pool({
+  connectionString: DATABASE_URL,
+});
+
+const adapter = new PrismaPg(pool);
+
+const createPrismaClient = () =>
+  new PrismaClient({
+    adapter,
+    log: ["query", "error", "warn"],
+  });
+
+const globalForPrisma = globalThis as unknown as {
+  prisma?: PrismaClient;
+};
+
+const prisma = globalForPrisma.prisma ?? createPrismaClient();
+
+if (process.env.NODE_ENV !== "production") {
+  globalForPrisma.prisma = prisma;
+}
+
+app.get("/health", async (_req: Request, res: Response) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    return res.status(200).json({
+      status: "ok",
+      environment: process.env.NODE_ENV,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: "error",
+      message: "Database not reachable",
+    });
+  }
+});
+
+
+/**
+ * Graceful shutdown
+ */
+const server = app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
 
 
 
@@ -71,3 +138,44 @@ console.log('hello')
 // Your database is now in sync with your schema.
 
 // PS C:\Users\shiva kushwah\Desktop\dev-practies\day1> 
+
+
+// PS C:\Users\shiva kushwah\Desktop\dev-practies\day1> npm install pg @prisma/adapter-pg
+
+// added 17 packages, and audited 267 packages in 16s
+
+// 43 packages are looking for funding
+//   run `npm fund` for details
+
+// 12 vulnerabilities (8 moderate, 4 high)
+
+// To address issues that do not require attention, run:
+//   npm audit fix
+
+// To address all issues possible (including breaking changes), run:
+//   npm audit fix --force
+
+// Some issues need review, and may require choosing
+// a different dependency.
+
+// Run `npm audit` for details.
+// PS C:\Users\shiva kushwah\Desktop\dev-practies\day1> npm install -D @types/pg
+
+// added 1 package, and audited 268 packages in 4s
+
+// 43 packages are looking for funding
+//   run `npm fund` for details
+
+// 12 vulnerabilities (8 moderate, 4 high)
+
+// To address issues that do not require attention, run:
+//   npm audit fix
+
+// To address all issues possible (including breaking changes), run:
+//   npm audit fix --force
+
+// Some issues need review, and may require choosing
+// a different dependency.
+
+// Run `npm audit` for details.
+// PS C:\Users\shiva kushwah\Desktop\dev-practies\day1>
